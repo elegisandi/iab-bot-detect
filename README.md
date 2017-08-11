@@ -47,3 +47,11 @@ Spider/Bot detection using IAB list
     > where **`$overwrite`** = a `boolean` flag to overwrite cache files (_default value_: `false`)
     
     Prepares cache files needed for bot detection process.
+
+## Contributing
+
+Open an issue first to discuss potential changes/additions.
+
+## License
+
+[MIT](https://github.com/elegisandi/iab-bot-detect/blob/master/LICENSE)

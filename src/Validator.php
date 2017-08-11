@@ -31,7 +31,7 @@ class Validator
     /**
      * @var string
      */
-    private $iab_blacklist_file = 'IAB_ABC_International_Spiders_and_Robots.txt.txt';
+    private $iab_blacklist_file = 'IAB_ABC_International_Spiders_and_Robots.txt';
 
     /**
      * @var
@@ -49,6 +49,11 @@ class Validator
     protected $blacklist_exception_regex_cache;
 
     /**
+     * @var bool
+     */
+    protected $initialized = false;
+
+    /**
      * @var
      */
     public $user_agent;
@@ -63,7 +68,9 @@ class Validator
         $this->setUserAgent($user_agent);
         $this->setCredentials($credentials);
 
-        $this->initialize();
+        if (!empty($this->iab_user) && !empty($this->iab_password)) {
+            $this->initialize();
+        }
     }
 
     /**
@@ -89,6 +96,11 @@ class Validator
      */
     public function isValidBrowser($user_agent = null)
     {
+        // initialize if not yet done
+        if (!$this->initialized) {
+            $this->initialize();
+        }
+
         if (!is_null($user_agent)) {
             $this->setUserAgent($user_agent);
         }
@@ -113,6 +125,11 @@ class Validator
      */
     public function isBot($user_agent = null, $white_list = true)
     {
+        // initialize if not yet done
+        if (!$this->initialized) {
+            $this->initialize();
+        }
+
         if (!is_null($user_agent)) {
             $this->setUserAgent($user_agent);
         }
@@ -136,9 +153,14 @@ class Validator
 
     /**
      * @param bool $overwrite
+     * @throws \Exception
      */
     public function initialize($overwrite = false)
     {
+        if (empty($this->iab_user) && empty($this->iab_password)) {
+            throw new \Exception('Invalid credentials.');
+        }
+
         $root_dir = dirname(__DIR__);
 
         // cache dir
@@ -164,11 +186,15 @@ class Validator
             $white_list = $files_dir . DIRECTORY_SEPARATOR . $this->iab_whitelist_file;
 
             if (!file_exists($white_list) || $overwrite) {
-                // download whitelist file
-                `wget -q -O $white_list --user=$this->iab_user --password=$this->iab_password $this->iab_ftp/$this->iab_whitelist_file`;
+                try {
+                    // download whitelist file
+                    `wget -q -O $white_list --user=$this->iab_user --password=$this->iab_password $this->iab_ftp/$this->iab_whitelist_file`;
 
-                // remove comments
-                `sed -i '/^#/d' $white_list`;
+                    // remove comments
+                    `sed -i '/^#/d' $white_list`;
+                } catch (\Exception $e) {
+                    throw $e;
+                }
             }
 
             $patterns = [];
@@ -201,15 +227,19 @@ class Validator
         $this->blacklist_regex_cache = $cache_dir . DIRECTORY_SEPARATOR . 'iab_blacklist_regex.txt';
         $this->blacklist_exception_regex_cache = $cache_dir . DIRECTORY_SEPARATOR . 'iab_blacklist_exception_regex.txt';
 
-        if (!file_exists($this->blacklist_regex_cache)) {
+        if (!file_exists($this->blacklist_regex_cache) || $overwrite) {
             $black_list = $files_dir . DIRECTORY_SEPARATOR . $this->iab_blacklist_file;
 
-            if (!file_exists($black_list)) {
-                // download blacklist file
-                `wget -q -O $black_list --user=$this->iab_user --password=$this->iab_password $this->iab_ftp/$this->iab_blacklist_file`;
+            if (!file_exists($black_list) || $overwrite) {
+                try {
+                    // download blacklist file
+                    `wget -q -O $black_list --user=$this->iab_user --password=$this->iab_password $this->iab_ftp/$this->iab_blacklist_file`;
 
-                // remove comments
-                `sed -i '/^#/d' $black_list`;
+                    // remove comments
+                    `sed -i '/^#/d' $black_list`;
+                } catch (\Exception $e) {
+                    throw $e;
+                }
             }
 
             $patterns = [];
@@ -251,5 +281,7 @@ class Validator
 
             $list = null;
         }
+
+        $this->initialized = true;
     }
 }

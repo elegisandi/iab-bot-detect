@@ -24,17 +24,22 @@ Spider/Bot detection using IAB list
 ## Methods
 
 - #### setUserAgent($user_agent)
-    > where `$user_agent` = User Agent String
+    > where **`$user_agent`** = User Agent string
     
 - #### setCredentials($credentials)
-    > where `$credentials` = an array of your IAB user and password
+    > where **`$credentials`** = a key-pair values array of your IAB user and password
     
 - #### isValidBrowser($user_agent)
-    > where `$user_agent` = User Agent String
+    > where **`$user_agent`** could be null
     
-    Returns **`boolean`** 
+    Returns **`boolean`**
     
 - #### isBot($user_agent)
-    > where `$user_agent` = User Agent String
+    > where **`$user_agent`** could be null
     
-    Returns **`boolean`** 
+    Returns **`boolean`**
+    
+- #### initialize($overwrite)
+    > where **`$overwrite`** = a `boolean` flag to overwrite cache files (_default value_: `false`)
+    
+    Prepares cache files needed for bot detection process.

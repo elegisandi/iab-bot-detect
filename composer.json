@@ -1,0 +1,21 @@
+{
+    "name": "elegisandi/iab-bot-detect",
+    "description": "Validate user agent against IAB spiders & bot list",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Elegi Sandi",
+            "email": "elegi@crowdmetric.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "autoload": {
+        "psr-4": {
+            "elegisandi\\IABBotDetect\\": "src"
+        }
+    },
+    "require": {
+        "php": "^7.0"
+    }
+}

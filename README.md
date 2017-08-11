@@ -1,6 +1,10 @@
 # iab-bot-detect
 Spider/Bot detection using IAB list
 
+## Installation
+
+    composer require elegisandi/iab-bot-detect
+
 ## Basic Usage
 
     <?php

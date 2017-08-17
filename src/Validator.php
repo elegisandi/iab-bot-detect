@@ -157,10 +157,6 @@ class Validator
      */
     public function initialize($overwrite = false)
     {
-        if (empty($this->iab_user) && empty($this->iab_password)) {
-            throw new \Exception('Invalid credentials.');
-        }
-
         $root_dir = dirname(__DIR__);
 
         // cache dir
@@ -186,6 +182,10 @@ class Validator
             $white_list = $files_dir . DIRECTORY_SEPARATOR . $this->iab_whitelist_file;
 
             if (!file_exists($white_list) || $overwrite) {
+                if (empty($this->iab_user) && empty($this->iab_password)) {
+                    throw new \Exception('Invalid credentials.');
+                }
+                
                 try {
                     // download whitelist file
                     `wget -q -O $white_list --user=$this->iab_user --password=$this->iab_password $this->iab_ftp/$this->iab_whitelist_file`;
@@ -231,6 +231,10 @@ class Validator
             $black_list = $files_dir . DIRECTORY_SEPARATOR . $this->iab_blacklist_file;
 
             if (!file_exists($black_list) || $overwrite) {
+                if (empty($this->iab_user) && empty($this->iab_password)) {
+                    throw new \Exception('Invalid credentials.');
+                }
+                
                 try {
                     // download blacklist file
                     `wget -q -O $black_list --user=$this->iab_user --password=$this->iab_password $this->iab_ftp/$this->iab_blacklist_file`;

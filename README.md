@@ -5,6 +5,27 @@ Spider/Bot detection using IAB list
 
     composer require elegisandi/iab-bot-detect
 
+## Laravel/Lumen Integration
+
+- Add IAB's service provider to your `config/app.php` providers
+
+      elegisandi\IABBotDetect\IabServiceProvider::class
+
+- Add IAB's facade to your `config/app.php` aliases
+
+      elegisandi\IABBotDetect\IabFacade::class
+      
+- Set IAB credentials in your `.env` file
+
+        IAB_USER=YOUR_IAB_USER
+        IAB_PASSWORD=YOUR_IAB_PASSWORD
+
+**For Lumen:**
+
+- Register IAB's service provider to your `bootstrap/app.php`
+
+      $app->register(elegisandi\IABBotDetect\IabServiceProvider::class);      
+
 ## Basic Usage
 
     <?php
@@ -20,6 +41,28 @@ Spider/Bot detection using IAB list
     $bot_detect = new Validator($user_agent, $credentials);
     
     if($bot_detect->isValidBrowser()) {
+        echo 'valid browser';
+    } else {
+        echo 'invalid browser';
+    }
+
+## Laravel/Lumen Usage
+
+    <?php
+    
+    use IAB;
+    
+    $user_agent = 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)';
+    
+    if(IAB::isValidBrowser($user_agent)) {
+        echo 'valid browser';
+    } else {
+        echo 'invalid browser';
+    }
+    
+**For Lumen**
+    
+    if(app('iab')->isValidBrowser($user_agent)) {
         echo 'valid browser';
     } else {
         echo 'invalid browser';

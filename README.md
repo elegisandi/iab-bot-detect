@@ -19,6 +19,10 @@ Spider/Bot detection using IAB list
 
         IAB_USER=YOUR_IAB_USER
         IAB_PASSWORD=YOUR_IAB_PASSWORD
+        
+**If you want to modify the package config, just run**
+
+    php artisan vendor:publish --provider=elegisandi\\IABBotDetect\\IabServiceProvider
 
 **For Lumen:**
 

@@ -20,7 +20,7 @@ Spider/Bot detection using IAB list
         IAB_USER=YOUR_IAB_USER
         IAB_PASSWORD=YOUR_IAB_PASSWORD
         
-**If you want to modify the package config, just run**
+**If you want to modify the package config, just run:**
 
     php artisan vendor:publish --provider=elegisandi\\IABBotDetect\\IabServiceProvider
 
@@ -64,7 +64,7 @@ Spider/Bot detection using IAB list
         echo 'invalid browser';
     }
     
-**For Lumen**
+**For Lumen:**
     
     if(app('iab')->isValidBrowser($user_agent)) {
         echo 'valid browser';

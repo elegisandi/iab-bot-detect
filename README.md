@@ -3,7 +3,7 @@ Spider/Bot detection using IAB list
 
 ## Installation
 
-    composer require elegisandi/iab-bot-detect
+    composer require elegisandi/iab-bot-detect:dev-master
 
 ## Laravel/Lumen Integration
 
@@ -13,7 +13,7 @@ Spider/Bot detection using IAB list
 
 - Add IAB's facade to your `config/app.php` aliases
 
-      elegisandi\IABBotDetect\IabFacade::class
+      'IAB' => elegisandi\IABBotDetect\IabFacade::class
       
 - Set IAB credentials in your `.env` file
 

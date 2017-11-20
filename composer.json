@@ -1,12 +1,15 @@
 {
     "name": "elegisandi/iab-bot-detect",
     "description": "Validate user agent against IAB spiders & bot list",
+    "keywords": ["elegisandi", "iab", "bot", "detect", "bot detect", "iab-bot-detect"],
+    "homepage": "https://github.com/elegisandi/iab-bot-detect",
     "type": "library",
     "license": "MIT",
     "authors": [
         {
             "name": "Elegi Sandi",
-            "email": "elegi@crowdmetric.com"
+            "email": "elegisandi@gmail.com",
+            "role": "Developer"
         }
     ],
     "minimum-stability": "dev",

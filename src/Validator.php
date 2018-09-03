@@ -9,14 +9,14 @@ namespace elegisandi\IABBotDetect;
 class Validator
 {
     /**
-     * @var
+     * @var mixed
      */
-    private $iab_user;
+    private $iab_user = null;
 
     /**
-     * @var
+     * @var mixed
      */
-    private $iab_password;
+    private $iab_password = null;
 
     /**
      * @var string
@@ -86,8 +86,13 @@ class Validator
      */
     public function setCredentials(array $credentials)
     {
-        $this->iab_password = $credentials['password'] ?? null;
-        $this->iab_user = $credentials['user'] ?? null;
+        if (!empty($credentials['user'])) {
+            $this->iab_user = $credentials['user'];
+        }
+
+        if (!empty($credentials['password'])) {
+            $this->iab_password = $credentials['password'];
+        }
     }
 
     /**
@@ -101,7 +106,7 @@ class Validator
             $this->initialize();
         }
 
-        if (!is_null($user_agent)) {
+        if (!empty($user_agent)) {
             $this->setUserAgent($user_agent);
         }
 
@@ -130,7 +135,7 @@ class Validator
             $this->initialize();
         }
 
-        if (!is_null($user_agent)) {
+        if (!empty($user_agent)) {
             $this->setUserAgent($user_agent);
         }
 

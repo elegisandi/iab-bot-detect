@@ -30,6 +30,14 @@ Spider/Bot detection using IAB list
 
       $app->register(elegisandi\IABBotDetect\IabServiceProvider::class);      
 
+## Configuration
+
+- Generate whitelist and blacklist cache
+
+      php artisan iab:refresh-list
+
+    > You may add the option **`--overwrite`** to reset cache.
+
 ## Basic Usage
 
     <?php

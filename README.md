@@ -3,7 +3,7 @@ Spider/Bot detection using IAB list
 
 ## Installation
 
-    composer require elegisandi/iab-bot-detect:dev-master
+    composer require elegisandi/iab-bot-detect
 
 ## Laravel/Lumen Integration
 

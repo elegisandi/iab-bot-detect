@@ -186,46 +186,7 @@ class Validator
         if (!file_exists($this->whitelist_regex_cache) || $overwrite) {
             $white_list = $files_dir . DIRECTORY_SEPARATOR . $this->iab_whitelist_file;
 
-            if (!file_exists($white_list) || $overwrite) {
-                if (empty($this->iab_user) && empty($this->iab_password)) {
-                    throw new \Exception('Invalid credentials.');
-                }
-                
-                try {
-                    // download whitelist file
-                    `wget -q -O $white_list --user=$this->iab_user --password=$this->iab_password $this->iab_ftp/$this->iab_whitelist_file`;
-
-                    // remove comments
-                    `sed -i '/^#/d' $white_list`;
-                } catch (\Exception $e) {
-                    throw $e;
-                }
-            }
-
-            $patterns = [];
-
-            $list = new \SplFileObject($white_list);
-            $list->setFlags(\SplFileObject::READ_AHEAD | \SplFileObject::SKIP_EMPTY | \SplFileObject::DROP_NEW_LINE);
-
-            foreach ($list as $item) {
-                $params = explode('|', $item);
-                $pattern = preg_quote($params[0], '/');
-
-                // skip if patter is inactive
-                if ($params[1] == 0) {
-                    continue;
-                }
-
-                // check if pattern occurs at the start of the UA string
-                if ($params[2] == 1) {
-                    $pattern = '^' . $pattern;
-                }
-
-                $patterns[] = $pattern;
-            }
-
-            file_put_contents($this->whitelist_regex_cache, '/(' . implode('|', $patterns) . ')/i');
-            $list = null;
+            $this->createWhiteListCache($white_list, $overwrite);
         }
 
         // get blacklist and exceptions
@@ -235,62 +196,120 @@ class Validator
         if (!file_exists($this->blacklist_regex_cache) || $overwrite) {
             $black_list = $files_dir . DIRECTORY_SEPARATOR . $this->iab_blacklist_file;
 
-            if (!file_exists($black_list) || $overwrite) {
-                if (empty($this->iab_user) && empty($this->iab_password)) {
-                    throw new \Exception('Invalid credentials.');
-                }
-                
-                try {
-                    // download blacklist file
-                    `wget -q -O $black_list --user=$this->iab_user --password=$this->iab_password $this->iab_ftp/$this->iab_blacklist_file`;
-
-                    // remove comments
-                    `sed -i '/^#/d' $black_list`;
-                } catch (\Exception $e) {
-                    throw $e;
-                }
-            }
-
-            $patterns = [];
-            $exceptions = [];
-
-            $list = new \SplFileObject($black_list);
-            $list->setFlags(\SplFileObject::READ_AHEAD | \SplFileObject::SKIP_EMPTY | \SplFileObject::DROP_NEW_LINE);
-
-            foreach ($list as $item) {
-                $params = explode('|', $item);
-                $pattern = preg_quote($params[0], '/');
-
-                // skip if patter is inactive
-                if ($params[1] == 0) {
-                    continue;
-                }
-
-                if (!empty($params[2])) {
-                    $exception = array_map(function ($pattern) {
-                        return preg_quote(trim($pattern), '/');
-                    }, explode(',', $params[2]));
-
-                    $exceptions[] = '(' . implode('|', $exception) . ')';
-                }
-
-                // check if pattern occurs at the start of the UA string
-                if ($params[5] == 1) {
-                    $pattern = '^' . $pattern;
-                }
-
-                $patterns[] = $pattern;
-            }
-
-            file_put_contents($this->blacklist_regex_cache, '/(' . implode('|', $patterns) . ')/i');
-
-            if (!empty($exceptions)) {
-                file_put_contents($this->blacklist_exception_regex_cache, '/(' . implode('|', $exceptions) . ')/i');
-            }
-
-            $list = null;
+            $this->createBlackListCache($black_list, $overwrite);
         }
 
         $this->initialized = true;
+    }
+
+    /**
+     * @param string $file_path
+     * @param bool $overwrite
+     */
+    private function createWhiteListCache($file_path, $overwrite)
+    {
+        if (!file_exists($file_path) || $overwrite) {
+            if (empty($this->iab_user) && empty($this->iab_password)) {
+                throw new \Exception('Invalid credentials.');
+            }
+            
+            try {
+                // download whitelist file
+                `wget -q -O $file_path --user=$this->iab_user --password=$this->iab_password $this->iab_ftp/$this->iab_whitelist_file`;
+
+                // remove comments
+                `sed -i '/^#/d' $file_path`;
+            } catch (\Exception $e) {
+                throw $e;
+            }
+        }
+
+        $patterns = [];
+
+        $list = new \SplFileObject($file_path);
+        $list->setFlags(\SplFileObject::READ_AHEAD | \SplFileObject::SKIP_EMPTY | \SplFileObject::DROP_NEW_LINE);
+
+        foreach ($list as $item) {
+            $params = explode('|', $item);
+            $pattern = preg_quote($params[0], '/');
+
+            // skip if pattern is inactive
+            if (isset($params[1]) && $params[1] == 0) {
+                continue;
+            }
+
+            // check if pattern occurs at the start of the UA string
+            if (isset($params[2]) && $params[2] == 1) {
+                $pattern = '^' . $pattern;
+            }
+
+            $patterns[] = $pattern;
+        }
+
+        file_put_contents($this->whitelist_regex_cache, '/(' . implode('|', $patterns) . ')/i');
+
+        $list = null;
+    }
+
+    /**
+     * @param string $file_path
+     * @param bool $overwrite
+     */
+    private function createBlackListCache($file_path, $overwrite)
+    {
+        if (!file_exists($file_path) || $overwrite) {
+            if (empty($this->iab_user) && empty($this->iab_password)) {
+                throw new \Exception('Invalid credentials.');
+            }
+            
+            try {
+                // download blacklist file
+                `wget -q -O $file_path --user=$this->iab_user --password=$this->iab_password $this->iab_ftp/$this->iab_blacklist_file`;
+
+                // remove comments
+                `sed -i '/^#/d' $file_path`;
+            } catch (\Exception $e) {
+                throw $e;
+            }
+        }
+
+        $patterns = [];
+        $exceptions = [];
+
+        $list = new \SplFileObject($file_path);
+        $list->setFlags(\SplFileObject::READ_AHEAD | \SplFileObject::SKIP_EMPTY | \SplFileObject::DROP_NEW_LINE);
+
+        foreach ($list as $item) {
+            $params = explode('|', $item);
+            $pattern = preg_quote($params[0], '/');
+
+            // skip if pattern is inactive
+            if (isset($params[1]) && $params[1] == 0) {
+                continue;
+            }
+
+            if (!empty($params[2])) {
+                $exception = array_map(function ($pattern) {
+                    return preg_quote(trim($pattern), '/');
+                }, explode(',', $params[2]));
+
+                $exceptions[] = '(' . implode('|', $exception) . ')';
+            }
+
+            // check if pattern occurs at the start of the UA string
+            if (isset($params[5]) && $params[5] == 1) {
+                $pattern = '^' . $pattern;
+            }
+
+            $patterns[] = $pattern;
+        }
+
+        file_put_contents($this->blacklist_regex_cache, '/(' . implode('|', $patterns) . ')/i');
+
+        if (!empty($exceptions)) {
+            file_put_contents($this->blacklist_exception_regex_cache, '/(' . implode('|', $exceptions) . ')/i');
+        }
+
+        $list = null;
     }
 }

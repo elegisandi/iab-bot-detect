@@ -31,6 +31,12 @@ class RefreshIABList extends Command
      */
     public function handle()
     {
-        app('iab')->initialize($this->option('overwrite'));
+        try {
+            app('iab')->initialize($this->option('overwrite'));
+
+            $this->info('IAB lists and cache are now updated.');
+        } catch (\Exception $e) {
+            $this->error($e->getMessage());
+        }
     }
 }

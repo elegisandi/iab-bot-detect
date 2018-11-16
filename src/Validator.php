@@ -147,6 +147,11 @@ class Validator
         $pattern = file_get_contents($this->blacklist_regex_cache);
 
         if (preg_match($pattern, $this->user_agent)) {
+            
+            if (!file_exists($this->blacklist_exception_regex_cache)) {
+                return true;
+            }
+            
             // check for exceptions
             $exception_regex = file_get_contents($this->blacklist_exception_regex_cache);
 

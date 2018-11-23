@@ -50,12 +50,16 @@ Spider/Bot detection using IAB list
         'password' => 'YOUR_IAB_PASSWORD'
     ];
     
-    $bot_detect = new Validator($user_agent, $credentials);
-    
-    if($bot_detect->isValidBrowser()) {
-        echo 'valid browser';
-    } else {
-        echo 'invalid browser';
+    try {
+        $bot_detect = new Validator($user_agent, $credentials);
+            
+        if($bot_detect->isValidBrowser()) {
+            echo 'valid browser';
+        } else {
+            echo 'invalid browser';
+        }
+    } catch (\Exception $e) {
+        // fallback user agent validation
     }
 
 ## Laravel/Lumen Usage
@@ -66,18 +70,26 @@ Spider/Bot detection using IAB list
     
     $user_agent = 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)';
     
-    if(IAB::isValidBrowser($user_agent)) {
-        echo 'valid browser';
-    } else {
-        echo 'invalid browser';
+    try {
+        if(IAB::isValidBrowser($user_agent)) {
+            echo 'valid browser';
+        } else {
+            echo 'invalid browser';
+        }
+    } catch (\Exception $e) {
+        // fallback user agent validation
     }
     
 **For Lumen:**
     
-    if(app('iab')->isValidBrowser($user_agent)) {
-        echo 'valid browser';
-    } else {
-        echo 'invalid browser';
+    try {
+        if(app('iab')->isValidBrowser($user_agent)) {
+            echo 'valid browser';
+        } else {
+            echo 'invalid browser';
+        }
+    } catch (\Exception $e) {
+        // fallback user agent validation
     }
    
 ## Methods
@@ -91,17 +103,29 @@ Spider/Bot detection using IAB list
 - #### isValidBrowser($user_agent)
     > where **`$user_agent`** could be null
     
+    > throws an _error exception_
+    
     Returns **`boolean`**
     
 - #### isBot($user_agent)
     > where **`$user_agent`** could be null
+    
+    > throws an _error exception_
     
     Returns **`boolean`**
     
 - #### initialize($overwrite)
     > where **`$overwrite`** = a `boolean` flag to overwrite cache files (_default value_: `false`)
     
+    > throws an _error exception_
+    
     Prepares cache files needed for bot detection process.
+    
+## Error Exceptions
+
+- ###### IABRequestException
+- ###### InvalidIABCacheException
+- ###### InvalidIABCredentialsException
 
 ## Contributing
 

@@ -2,6 +2,11 @@
 
 namespace elegisandi\IABBotDetect;
 
+use elegisandi\IABBotDetect\Exceptions\InvalidIABCacheException;
+use elegisandi\IABBotDetect\Exceptions\InvalidIABCredentialsException;
+use elegisandi\IABBotDetect\Exceptions\IABRequestException;
+use Exception;
+
 /**
  * Class Validator
  * @package elegisandi\IABBotDetect
@@ -98,6 +103,7 @@ class Validator
     /**
      * @param string|null $user_agent
      * @return bool
+     * @throws Exception
      */
     public function isValidBrowser($user_agent = null)
     {
@@ -127,6 +133,7 @@ class Validator
      * @param string|null $user_agent
      * @param bool $white_list
      * @return bool
+     * @throws Exception
      */
     public function isBot($user_agent = null, $white_list = true)
     {
@@ -147,11 +154,11 @@ class Validator
         $pattern = file_get_contents($this->blacklist_regex_cache);
 
         if (preg_match($pattern, $this->user_agent)) {
-            
+
             if (!file_exists($this->blacklist_exception_regex_cache)) {
                 return true;
             }
-            
+
             // check for exceptions
             $exception_regex = file_get_contents($this->blacklist_exception_regex_cache);
 
@@ -163,7 +170,7 @@ class Validator
 
     /**
      * @param bool $overwrite
-     * @throws \Exception
+     * @throws Exception
      */
     public function initialize($overwrite = false)
     {
@@ -215,17 +222,17 @@ class Validator
     {
         if (!file_exists($file_path) || $overwrite) {
             if (empty($this->iab_user) && empty($this->iab_password)) {
-                throw new \Exception('Invalid credentials.');
+                throw new InvalidIABCredentialsException('IAB account\'s username and password are not set.');
             }
-            
+
             try {
                 // download whitelist file
                 `wget -q -O $file_path --user=$this->iab_user --password=$this->iab_password $this->iab_ftp/$this->iab_whitelist_file`;
 
                 // remove comments
                 `sed -i '/^#/d' $file_path`;
-            } catch (\Exception $e) {
-                throw $e;
+            } catch (Exception $e) {
+                throw new IABRequestException('Error downloading IAB whitelist file.', 0, $e);
             }
         }
 
@@ -251,6 +258,10 @@ class Validator
             $patterns[] = $pattern;
         }
 
+        if (empty($patterns)) {
+            throw new InvalidIABCacheException('IAB whitelist cache is empty.');
+        }
+
         file_put_contents($this->whitelist_regex_cache, '/(' . implode('|', $patterns) . ')/i');
 
         $list = null;
@@ -264,17 +275,17 @@ class Validator
     {
         if (!file_exists($file_path) || $overwrite) {
             if (empty($this->iab_user) && empty($this->iab_password)) {
-                throw new \Exception('Invalid credentials.');
+                throw new InvalidIABCredentialsException('IAB account\'s username and password are not set.');
             }
-            
+
             try {
                 // download blacklist file
                 `wget -q -O $file_path --user=$this->iab_user --password=$this->iab_password $this->iab_ftp/$this->iab_blacklist_file`;
 
                 // remove comments
                 `sed -i '/^#/d' $file_path`;
-            } catch (\Exception $e) {
-                throw $e;
+            } catch (Exception $e) {
+                throw new IABRequestException('Error downloading IAB blacklist file.', 0, $e);
             }
         }
 
@@ -307,6 +318,10 @@ class Validator
             }
 
             $patterns[] = $pattern;
+        }
+
+        if (empty($patterns)) {
+            throw new InvalidIABCacheException('IAB blacklist cache is empty.');
         }
 
         file_put_contents($this->blacklist_regex_cache, '/(' . implode('|', $patterns) . ')/i');

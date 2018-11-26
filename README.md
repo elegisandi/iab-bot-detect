@@ -17,9 +17,9 @@ Spider/Bot detection using IAB list
       
 - Set IAB credentials in your `.env` file
 
-        IAB_USER=YOUR_IAB_USER
-        IAB_PASSWORD=YOUR_IAB_PASSWORD
-        
+        IAB_USER=your-iab-user
+        IAB_PASSWORD=your-iab-password
+
 **If you want to modify the package config, just run:**
 
     php artisan vendor:publish --provider=elegisandi\\IABBotDetect\\IabServiceProvider
@@ -45,13 +45,13 @@ Spider/Bot detection using IAB list
     use elegisandi\IABBotDetect\Validator;
     
     $user_agent = 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)';
-    $credentials = [
+    $config = [
         'user' => 'YOUR_IAB_USER',
         'password' => 'YOUR_IAB_PASSWORD'
     ];
     
     try {
-        $bot_detect = new Validator($user_agent, $credentials);
+        $bot_detect = new Validator($user_agent, $config);
             
         if($bot_detect->isValidBrowser()) {
             echo 'valid browser';
@@ -61,6 +61,18 @@ Spider/Bot detection using IAB list
     } catch (\Exception $e) {
         // fallback user agent validation
     }
+
+**S3 Auto Backup**
+
+_To enable this feature, you must add the following into the 2nd argument of the constructor_
+
+    's3_backup' => true,
+    's3_bucket' => 'YOUR_IAB_S3_BUCKET,
+    's3_region' => 'YOUR_AWS_REGION',
+    'aws_credentials' => [
+        'key' => 'YOUR_AWS_ACCESS_KEY_ID',
+        'secret' => 'YOUR_AWS_SECRET_ACCESS_KEY',
+    ]
 
 ## Laravel/Lumen Usage
 
@@ -91,7 +103,17 @@ Spider/Bot detection using IAB list
     } catch (\Exception $e) {
         // fallback user agent validation
     }
-   
+
+**S3 Auto Backup**
+
+_To enable this feature, you must set the following .env variables_
+
+    IAB_S3_BACKUP=true
+    IAB_S3_BUCKET=your-s3-bucket-name
+    AWS_REGION=your-s3-region,
+    AWS_ACCESS_KEY_ID=your-aws-access-key
+    AWS_SECRET_ACCESS_KEY=your-aws-secret-key
+
 ## Methods
 
 - #### setUserAgent($user_agent)

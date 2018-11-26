@@ -44,9 +44,9 @@ class IabServiceProvider extends ServiceProvider
     public function register()
     {
         $this->app->singleton('iab', function ($app) {
-            $credentials = $app->make('config')->get('iab');
+            $config = $app->make('config')->get('iab');
 
-            return new Validator(null, $credentials);
+            return new Validator(null, $config);
         });
 
         $this->app->alias('iab', 'elegisandi\IABBotDetect\Validator');

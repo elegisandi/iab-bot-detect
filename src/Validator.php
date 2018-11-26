@@ -64,14 +64,50 @@ class Validator
     public $user_agent;
 
     /**
+     * @var bool
+     */
+    public $s3_backup = false;
+
+    /**
+     * @var mixed
+     */
+    protected $s3_bucket = null;
+
+    /**
+     * @var mixed
+     */
+    protected $s3_region = null;
+
+    /**
+     * @var array
+     */
+    protected $aws_credentials = [];
+
+    /**
      * Validator constructor.
      * @param string|null $user_agent
-     * @param array $credentials - IAB user and password
+     * @param array $config
+     * @throws Exception
      */
-    public function __construct($user_agent = null, array $credentials = [])
+    public function __construct($user_agent = null, array $config = [])
     {
         $this->setUserAgent($user_agent);
-        $this->setCredentials($credentials);
+        $this->setCredentials($config);
+
+        // should enable s3 backup
+        if ($this->s3_backup = !empty($config['s3_backup'])) {
+            if (!empty($config['s3_bucket'])) {
+                $this->s3_bucket = $config['s3_bucket'];
+            }
+
+            if (!empty($config['s3_region'])) {
+                $this->s3_region = $config['s3_region'];
+            }
+
+            if (!empty($config['aws_credentials'])) {
+                $this->aws_credentials = $config['aws_credentials'];
+            }
+        }
 
         if (!empty($this->iab_user) && !empty($this->iab_password)) {
             $this->initialize();
@@ -217,6 +253,9 @@ class Validator
     /**
      * @param string $file_path
      * @param bool $overwrite
+     * @throws IABRequestException
+     * @throws InvalidIABCacheException
+     * @throws InvalidIABCredentialsException
      */
     private function createWhiteListCache($file_path, $overwrite)
     {
@@ -226,13 +265,13 @@ class Validator
             }
 
             try {
-                // download whitelist file
-                `wget -q -O $file_path --user=$this->iab_user --password=$this->iab_password $this->iab_ftp/$this->iab_whitelist_file`;
-
-                // remove comments
-                `sed -i '/^#/d' $file_path`;
+                $this->storeIABFile($this->iab_whitelist_file, $file_path);
             } catch (Exception $e) {
-                throw new IABRequestException('Error downloading IAB whitelist file.', 0, $e);
+                if ($this->s3_backup) {
+                    $this->fetchS3BackupFile($this->iab_whitelist_file, $file_path);
+                } else {
+                    throw new IABRequestException('Error downloading IAB whitelist file.', 0, $e);
+                }
             }
         }
 
@@ -270,6 +309,9 @@ class Validator
     /**
      * @param string $file_path
      * @param bool $overwrite
+     * @throws IABRequestException
+     * @throws InvalidIABCacheException
+     * @throws InvalidIABCredentialsException
      */
     private function createBlackListCache($file_path, $overwrite)
     {
@@ -279,13 +321,13 @@ class Validator
             }
 
             try {
-                // download blacklist file
-                `wget -q -O $file_path --user=$this->iab_user --password=$this->iab_password $this->iab_ftp/$this->iab_blacklist_file`;
-
-                // remove comments
-                `sed -i '/^#/d' $file_path`;
+                $this->storeIABFile($this->iab_blacklist_file, $file_path);
             } catch (Exception $e) {
-                throw new IABRequestException('Error downloading IAB blacklist file.', 0, $e);
+                if ($this->s3_backup) {
+                    $this->fetchS3BackupFile($this->iab_blacklist_file, $file_path);
+                } else {
+                    throw new IABRequestException('Error downloading IAB blacklist file.', 0, $e);
+                }
             }
         }
 
@@ -331,5 +373,57 @@ class Validator
         }
 
         $list = null;
+    }
+
+    /**
+     * @param string $filename
+     * @param string $filepath
+     */
+    private function storeIABFile($filename, $filepath)
+    {
+        // download whitelist file
+        `wget -q -O $filepath --user=$this->iab_user --password=$this->iab_password $this->iab_ftp/$filename`;
+
+        // remove comments
+        `sed -i '/^#/d' $filepath`;
+
+        // s3 backup
+        if ($this->s3_backup) {
+            $this->generateS3Client()->putObject([
+                'Bucket' => $this->s3_bucket,
+                'Body' => file_get_contents($filepath),
+                'Key' => $filename,
+            ]);
+        }
+    }
+
+    /**
+     * @param string $filename
+     * @param string $filepath
+     * @throws IABRequestException
+     */
+    private function fetchS3BackupFile($filename, $filepath)
+    {
+        try {
+            $this->generateS3Client()->getObject([
+                'Bucket' => $this->s3_bucket,
+                'Key' => $filename,
+                'SaveAs' => $filepath,
+            ]);
+        } catch (Exception $e) {
+            throw new IABRequestException('Error downloading IAB blacklist file.', 0, $e);
+        }
+    }
+
+    /**
+     * @return \Aws\S3\S3Client
+     */
+    private function generateS3Client()
+    {
+        return new \Aws\S3\S3Client([
+            'version' => 'latest',
+            'region' => $this->s3_region,
+            'credentials' => new \Aws\Credentials\Credentials($this->aws_credentials['key'], $this->aws_credentials['secret'])
+        ]);
     }
 }

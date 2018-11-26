@@ -26,7 +26,7 @@ class Validator
     /**
      * @var string
      */
-    private $iab_ftp = 'ftp://ftp.iab.net';
+    private $iab_ftp = 'ftp.iab.net';
 
     /**
      * @var string
@@ -82,6 +82,16 @@ class Validator
      * @var array
      */
     protected $aws_credentials = [];
+
+    /**
+     * @var bool
+     */
+    private $whitelist_cache_created = false;
+
+    /**
+     * @var bool
+     */
+    private $blacklist_cache_created = false;
 
     /**
      * Validator constructor.
@@ -228,10 +238,15 @@ class Validator
             mkdir($files_dir);
         }
 
+        // check if has iab login credentials
+        if (empty($this->iab_user) && empty($this->iab_password)) {
+            throw new InvalidIABCredentialsException('IAB account\'s username and password are not set.');
+        }
+
         // get whitelist
         $this->whitelist_regex_cache = $cache_dir . DIRECTORY_SEPARATOR . 'iab_whitelist_regex.txt';
 
-        if (!file_exists($this->whitelist_regex_cache) || $overwrite) {
+        if ((!file_exists($this->whitelist_regex_cache) || $overwrite) && !$this->whitelist_cache_created) {
             $white_list = $files_dir . DIRECTORY_SEPARATOR . $this->iab_whitelist_file;
 
             $this->createWhiteListCache($white_list, $overwrite);
@@ -241,7 +256,7 @@ class Validator
         $this->blacklist_regex_cache = $cache_dir . DIRECTORY_SEPARATOR . 'iab_blacklist_regex.txt';
         $this->blacklist_exception_regex_cache = $cache_dir . DIRECTORY_SEPARATOR . 'iab_blacklist_exception_regex.txt';
 
-        if (!file_exists($this->blacklist_regex_cache) || $overwrite) {
+        if ((!file_exists($this->blacklist_regex_cache) || $overwrite) && !$this->blacklist_cache_created) {
             $black_list = $files_dir . DIRECTORY_SEPARATOR . $this->iab_blacklist_file;
 
             $this->createBlackListCache($black_list, $overwrite);
@@ -253,24 +268,24 @@ class Validator
     /**
      * @param string $file_path
      * @param bool $overwrite
-     * @throws IABRequestException
-     * @throws InvalidIABCacheException
-     * @throws InvalidIABCredentialsException
+     * @throws Exception
      */
     private function createWhiteListCache($file_path, $overwrite)
     {
         if (!file_exists($file_path) || $overwrite) {
-            if (empty($this->iab_user) && empty($this->iab_password)) {
-                throw new InvalidIABCredentialsException('IAB account\'s username and password are not set.');
-            }
-
             try {
                 $this->storeIABFile($this->iab_whitelist_file, $file_path);
-            } catch (Exception $e) {
+            } catch (IABRequestException $exception) {
                 if ($this->s3_backup) {
                     $this->fetchS3BackupFile($this->iab_whitelist_file, $file_path);
                 } else {
-                    throw new IABRequestException('Error downloading IAB whitelist file.', 0, $e);
+                    throw $exception;
+                }
+            } catch (Exception $exception) {
+                if ($this->s3_backup) {
+                    $this->fetchS3BackupFile($this->iab_whitelist_file, $file_path);
+                } else {
+                    throw new IABRequestException("Error downloading {$this->iab_whitelist_file} file.", 0, $exception);
                 }
             }
         }
@@ -304,29 +319,30 @@ class Validator
         file_put_contents($this->whitelist_regex_cache, '/(' . implode('|', $patterns) . ')/i');
 
         $list = null;
+        $this->whitelist_cache_created = true;
     }
 
     /**
      * @param string $file_path
      * @param bool $overwrite
-     * @throws IABRequestException
-     * @throws InvalidIABCacheException
-     * @throws InvalidIABCredentialsException
+     * @throws Exception
      */
     private function createBlackListCache($file_path, $overwrite)
     {
         if (!file_exists($file_path) || $overwrite) {
-            if (empty($this->iab_user) && empty($this->iab_password)) {
-                throw new InvalidIABCredentialsException('IAB account\'s username and password are not set.');
-            }
-
             try {
                 $this->storeIABFile($this->iab_blacklist_file, $file_path);
-            } catch (Exception $e) {
+            } catch (IABRequestException $exception) {
                 if ($this->s3_backup) {
                     $this->fetchS3BackupFile($this->iab_blacklist_file, $file_path);
                 } else {
-                    throw new IABRequestException('Error downloading IAB blacklist file.', 0, $e);
+                    throw $exception;
+                }
+            } catch (Exception $exception) {
+                if ($this->s3_backup) {
+                    $this->fetchS3BackupFile($this->iab_blacklist_file, $file_path);
+                } else {
+                    throw new IABRequestException("Error downloading {$this->iab_blacklist_file} file.", 0, $exception);
                 }
             }
         }
@@ -373,16 +389,32 @@ class Validator
         }
 
         $list = null;
+        $this->blacklist_cache_created = true;
     }
 
     /**
      * @param string $filename
      * @param string $filepath
+     * @throws IABRequestException
      */
     private function storeIABFile($filename, $filepath)
     {
+        // set up ftp basic connection
+        $conn_id = ftp_connect($this->iab_ftp);
+
+        // login with username and password
+        ftp_login($conn_id, $this->iab_user, $this->iab_password);
+
+        // turn passive mode on
+        ftp_pasv($conn_id, true);
+
         // download whitelist file
-        `wget -q -O $filepath --user=$this->iab_user --password=$this->iab_password $this->iab_ftp/$filename`;
+        if (!ftp_get($conn_id, $filepath, $filename, FTP_BINARY)) {
+            throw new IABRequestException("Error downloading {$filename} file from IAB's FTP server.");
+        }
+
+        // close the connection
+        ftp_close($conn_id);
 
         // remove comments
         `sed -i '/^#/d' $filepath`;
@@ -411,7 +443,7 @@ class Validator
                 'SaveAs' => $filepath,
             ]);
         } catch (Exception $e) {
-            throw new IABRequestException('Error downloading IAB blacklist file.', 0, $e);
+            throw new IABRequestException("Error downloading {$filename} file from Amazon S3.", 0, $e);
         }
     }
 

@@ -2,6 +2,7 @@
 
 namespace elegisandi\IABBotDetect;
 
+use elegisandi\IABBotDetect\Exceptions\IABBackupException;
 use elegisandi\IABBotDetect\Exceptions\InvalidIABCacheException;
 use elegisandi\IABBotDetect\Exceptions\InvalidIABCredentialsException;
 use elegisandi\IABBotDetect\Exceptions\IABRequestException;
@@ -281,6 +282,8 @@ class Validator
                 } else {
                     throw $exception;
                 }
+            } catch (IABBackupException $exception) {
+                throw $exception;
             } catch (Exception $exception) {
                 if ($this->s3_backup) {
                     $this->fetchS3BackupFile($this->iab_whitelist_file, $file_path);
@@ -338,6 +341,8 @@ class Validator
                 } else {
                     throw $exception;
                 }
+            } catch (IABBackupException $exception) {
+                throw $exception;
             } catch (Exception $exception) {
                 if ($this->s3_backup) {
                     $this->fetchS3BackupFile($this->iab_blacklist_file, $file_path);
@@ -395,7 +400,7 @@ class Validator
     /**
      * @param string $filename
      * @param string $filepath
-     * @throws IABRequestException
+     * @throws Exception
      */
     private function storeIABFile($filename, $filepath)
     {
@@ -421,18 +426,22 @@ class Validator
 
         // s3 backup
         if ($this->s3_backup) {
-            $this->generateS3Client()->putObject([
-                'Bucket' => $this->s3_bucket,
-                'Body' => file_get_contents($filepath),
-                'Key' => $filename,
-            ]);
+            try {
+                $this->generateS3Client()->putObject([
+                    'Bucket' => $this->s3_bucket,
+                    'Body' => file_get_contents($filepath),
+                    'Key' => $filename,
+                ]);
+            } catch (Exception $exception) {
+                throw new IABBackupException("Error creating backup of {$filename} file to Amazon S3", 0, $exception);
+            }
         }
     }
 
     /**
      * @param string $filename
      * @param string $filepath
-     * @throws IABRequestException
+     * @throws IABBackupException
      */
     private function fetchS3BackupFile($filename, $filepath)
     {
@@ -442,8 +451,9 @@ class Validator
                 'Key' => $filename,
                 'SaveAs' => $filepath,
             ]);
-        } catch (Exception $e) {
-            throw new IABRequestException("Error downloading {$filename} file from Amazon S3.", 0, $e);
+        } catch (Exception $exception) {
+            unlink($filepath);
+            throw new IABBackupException("Error downloading backup {$filename} file from Amazon S3.", 0, $exception);
         }
     }
 

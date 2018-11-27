@@ -110,7 +110,7 @@ _To enable this feature, you must set the following .env variables_
 
     IAB_S3_BACKUP=true
     IAB_S3_BUCKET=your-s3-bucket-name
-    AWS_REGION=your-s3-region,
+    AWS_REGION=your-s3-region
     AWS_ACCESS_KEY_ID=your-aws-access-key
     AWS_SECRET_ACCESS_KEY=your-aws-secret-key
 
@@ -146,6 +146,7 @@ _To enable this feature, you must set the following .env variables_
 ## Error Exceptions
 
 - ###### IABRequestException
+- ###### IABBackupException
 - ###### InvalidIABCacheException
 - ###### InvalidIABCredentialsException
 
